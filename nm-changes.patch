@@ -1,0 +1,14 @@
+diff -urNp NetworkManager-openswan-0.8-cvs-patched/properties/nm-openswan.c NetworkManager-openswan-0.8/properties/nm-openswan.c
+--- NetworkManager-openswan-0.8-cvs-patched/properties/nm-openswan.c	2010-07-14 10:19:50.537517432 -0400
++++ NetworkManager-openswan-0.8/properties/nm-openswan.c	2010-07-14 10:20:39.104517662 -0400
+@@ -814,8 +814,8 @@ openswan_plugin_ui_interface_init (NMVpn
+ 	/* interface implementation */
+ 	iface_class->ui_factory = ui_factory;
+ 	iface_class->get_capabilities = get_capabilities;
+-	iface_class->import = NULL;
+-	iface_class->export = NULL;
++	iface_class->import_from_file = NULL;
++	iface_class->export_to_file = NULL;
+ 	iface_class->get_suggested_name = NULL;
+ 	iface_class->delete_connection = delete_connection;
+ }

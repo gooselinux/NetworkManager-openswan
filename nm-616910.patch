@@ -1,0 +1,306 @@
+diff -urNp NetworkManager-openswan-0.8-cvs-patched/properties/nm-openswan.c NetworkManager-openswan-0.8/properties/nm-openswan.c
+--- NetworkManager-openswan-0.8-cvs-patched/properties/nm-openswan.c	2010-07-26 10:49:35.134329144 -0400
++++ NetworkManager-openswan-0.8/properties/nm-openswan.c	2010-07-26 10:53:45.099328711 -0400
+@@ -416,6 +416,28 @@ init_plugin_ui (OpenswanPluginUiWidget *
+ 	}
+ 	g_signal_connect (G_OBJECT (widget), "changed", G_CALLBACK (stuff_changed_cb), self);
+ 
++	/* Phase 1 Algorithms: IKE*/
++	widget = glade_xml_get_widget (priv->xml, "phase1_entry");
++	g_return_val_if_fail (widget != NULL, FALSE);
++	gtk_size_group_add_widget (priv->group, GTK_WIDGET (widget));
++	if (s_vpn) {
++		value = nm_setting_vpn_get_data_item (s_vpn, NM_OPENSWAN_IKE);
++		if (value && strlen (value))
++			gtk_entry_set_text (GTK_ENTRY (widget), value);
++	}
++	g_signal_connect (G_OBJECT (widget), "changed", G_CALLBACK (stuff_changed_cb), self);
++
++	/* Phase 2 Algorithms: ESP*/
++	widget = glade_xml_get_widget (priv->xml, "phase2_entry");
++	g_return_val_if_fail (widget != NULL, FALSE);
++	gtk_size_group_add_widget (priv->group, GTK_WIDGET (widget));
++	if (s_vpn) {
++		value = nm_setting_vpn_get_data_item (s_vpn, NM_OPENSWAN_ESP);
++		if (value && strlen (value))
++			gtk_entry_set_text (GTK_ENTRY (widget), value);
++	}
++	g_signal_connect (G_OBJECT (widget), "changed", G_CALLBACK (stuff_changed_cb), self);
++
+ 	widget = glade_xml_get_widget (priv->xml, "domain_entry");
+ 	g_return_val_if_fail (widget != NULL, FALSE);
+ 	gtk_size_group_add_widget (priv->group, GTK_WIDGET (widget));
+@@ -520,11 +542,25 @@ update_connection (NMVpnPluginUiWidgetIn
+ 	if (str && strlen (str))
+ 		nm_setting_vpn_add_data_item (s_vpn, NM_OPENSWAN_LEFTID, str);
+ 
++	/* User name*/
+ 	widget = glade_xml_get_widget (priv->xml, "user_entry");
+ 	str = (char *) gtk_entry_get_text (GTK_ENTRY (widget));
+ 	if (str && strlen (str))
+ 		nm_setting_vpn_add_data_item (s_vpn, NM_OPENSWAN_LEFTXAUTHUSER, str);
++	
++	/* Phase 1 Algorithms: ike */
++	widget = glade_xml_get_widget (priv->xml, "phase1_entry");
++	str = (char *) gtk_entry_get_text (GTK_ENTRY (widget));
++	if (str && strlen (str))
++		nm_setting_vpn_add_data_item (s_vpn, NM_OPENSWAN_IKE, str);
++
++	/* Phase 2 Algorithms: esp */
++	widget = glade_xml_get_widget (priv->xml, "phase2_entry");
++	str = (char *) gtk_entry_get_text (GTK_ENTRY (widget));
++	if (str && strlen (str))
++		nm_setting_vpn_add_data_item (s_vpn, NM_OPENSWAN_ESP, str);
+ 
++	/* Domain entry */
+ 	widget = glade_xml_get_widget (priv->xml, "domain_entry");
+ 	str = (char *) gtk_entry_get_text (GTK_ENTRY (widget));
+ 	if (str && strlen (str))
+diff -urNp NetworkManager-openswan-0.8-cvs-patched/properties/nm-openswan-dialog.glade NetworkManager-openswan-0.8/properties/nm-openswan-dialog.glade
+--- NetworkManager-openswan-0.8-cvs-patched/properties/nm-openswan-dialog.glade	2010-07-14 10:19:50.536517438 -0400
++++ NetworkManager-openswan-0.8/properties/nm-openswan-dialog.glade	2010-07-26 10:52:56.952329297 -0400
+@@ -233,77 +233,120 @@
+                 <property name="visible">True</property>
+                 <property name="left_padding">12</property>
+                 <child>
+-                  <widget class="GtkTable" id="table3">
++                  <widget class="GtkEventBox" id="eventbox1">
+                     <property name="visible">True</property>
+-                    <property name="n_rows">5</property>
+-                    <property name="n_columns">2</property>
+-                    <property name="column_spacing">6</property>
+-                    <property name="row_spacing">6</property>
+                     <child>
+-                      <widget class="GtkLabel" id="label26">
++                      <widget class="GtkTable" id="table3">
+                         <property name="visible">True</property>
+-                        <property name="xalign">0</property>
+-                        <property name="label" translatable="yes">User name:</property>
++                        <property name="n_rows">4</property>
++                        <property name="n_columns">2</property>
++                        <property name="column_spacing">6</property>
++                        <property name="row_spacing">6</property>
++                        <child>
++                          <widget class="GtkLabel" id="label26">
++                            <property name="visible">True</property>
++                            <property name="xalign">0</property>
++                            <property name="label" translatable="yes">User name:</property>
++                          </widget>
++                          <packing>
++                            <property name="x_options">GTK_FILL</property>
++                            <property name="y_options"></property>
++                          </packing>
++                        </child>
++                        <child>
++                          <widget class="GtkEntry" id="user_entry">
++                            <property name="visible">True</property>
++                            <property name="can_focus">True</property>
++                            <property name="invisible_char">&#x25CF;</property>
++                          </widget>
++                          <packing>
++                            <property name="left_attach">1</property>
++                            <property name="right_attach">2</property>
++                            <property name="y_options"></property>
++                          </packing>
++                        </child>
++                        <child>
++                          <widget class="GtkLabel" id="label27">
++                            <property name="visible">True</property>
++                            <property name="xalign">0</property>
++                            <property name="label" translatable="yes">Phase1 Algorithms:</property>
++                          </widget>
++                          <packing>
++                            <property name="top_attach">1</property>
++                            <property name="bottom_attach">2</property>
++                            <property name="x_options">GTK_FILL</property>
++                            <property name="y_options"></property>
++                          </packing>
++                        </child>
++                        <child>
++                          <widget class="GtkEntry" id="phase1_entry">
++                            <property name="visible">True</property>
++                            <property name="can_focus">True</property>
++                            <property name="invisible_char">&#x25CF;</property>
++                          </widget>
++                          <packing>
++                            <property name="left_attach">1</property>
++                            <property name="right_attach">2</property>
++                            <property name="top_attach">1</property>
++                            <property name="bottom_attach">2</property>
++                            <property name="y_options"></property>
++                          </packing>
++                        </child>
++                        <child>
++                          <widget class="GtkLabel" id="label1">
++                            <property name="visible">True</property>
++                            <property name="xalign">0</property>
++                            <property name="label" translatable="yes">Phase2 Algorithms:</property>
++                          </widget>
++                          <packing>
++                            <property name="top_attach">2</property>
++                            <property name="bottom_attach">3</property>
++                            <property name="x_options">GTK_FILL</property>
++                            <property name="y_options"></property>
++                          </packing>
++                        </child>
++                        <child>
++                          <widget class="GtkEntry" id="phase2_entry">
++                            <property name="visible">True</property>
++                            <property name="can_focus">True</property>
++                            <property name="invisible_char">&#x25CF;</property>
++                          </widget>
++                          <packing>
++                            <property name="left_attach">1</property>
++                            <property name="right_attach">2</property>
++                            <property name="top_attach">2</property>
++                            <property name="bottom_attach">3</property>
++                            <property name="y_options"></property>
++                          </packing>
++                        </child>
++                        <child>
++                          <widget class="GtkLabel" id="label2">
++                            <property name="visible">True</property>
++                            <property name="xalign">0</property>
++                            <property name="label" translatable="yes">Domain:</property>
++                          </widget>
++                          <packing>
++                            <property name="top_attach">3</property>
++                            <property name="bottom_attach">4</property>
++                            <property name="x_options">GTK_FILL</property>
++                            <property name="y_options"></property>
++                          </packing>
++                        </child>
++                        <child>
++                          <widget class="GtkEntry" id="domain_entry">
++                            <property name="visible">True</property>
++                            <property name="can_focus">True</property>
++                            <property name="invisible_char">&#x25CF;</property>
++                          </widget>
++                          <packing>
++                            <property name="left_attach">1</property>
++                            <property name="right_attach">2</property>
++                            <property name="top_attach">3</property>
++                            <property name="bottom_attach">4</property>
++                            <property name="y_options"></property>
++                          </packing>
++                        </child>
+                       </widget>
+-                      <packing>
+-                        <property name="x_options">GTK_FILL</property>
+-                        <property name="y_options"></property>
+-                      </packing>
+-                    </child>
+-                    <child>
+-                      <widget class="GtkEntry" id="user_entry">
+-                        <property name="visible">True</property>
+-                        <property name="can_focus">True</property>
+-                      </widget>
+-                      <packing>
+-                        <property name="left_attach">1</property>
+-                        <property name="right_attach">2</property>
+-                        <property name="y_options"></property>
+-                      </packing>
+-                    </child>
+-                    <child>
+-                      <widget class="GtkLabel" id="label27">
+-                        <property name="visible">True</property>
+-                        <property name="xalign">0</property>
+-                        <property name="label" translatable="yes">Domain:</property>
+-                      </widget>
+-                      <packing>
+-                        <property name="top_attach">1</property>
+-                        <property name="bottom_attach">2</property>
+-                        <property name="x_options">GTK_FILL</property>
+-                        <property name="y_options"></property>
+-                      </packing>
+-                    </child>
+-                    <child>
+-                      <widget class="GtkEntry" id="domain_entry">
+-                        <property name="visible">True</property>
+-                        <property name="can_focus">True</property>
+-                      </widget>
+-                      <packing>
+-                        <property name="left_attach">1</property>
+-                        <property name="right_attach">2</property>
+-                        <property name="top_attach">1</property>
+-                        <property name="bottom_attach">2</property>
+-                        <property name="y_options"></property>
+-                      </packing>
+-                    </child>
+-                    <child>
+-                      <placeholder/>
+-                    </child>
+-                    <child>
+-                      <placeholder/>
+-                    </child>
+-                    <child>
+-                      <placeholder/>
+-                    </child>
+-                    <child>
+-                      <placeholder/>
+-                    </child>
+-                    <child>
+-                      <placeholder/>
+-                    </child>
+-                    <child>
+-                      <placeholder/>
+                     </child>
+                   </widget>
+                 </child>
+diff -urNp NetworkManager-openswan-0.8-cvs-patched/src/nm-openswan-service.c NetworkManager-openswan-0.8/src/nm-openswan-service.c
+--- NetworkManager-openswan-0.8-cvs-patched/src/nm-openswan-service.c	2010-07-14 10:19:50.542521284 -0400
++++ NetworkManager-openswan-0.8/src/nm-openswan-service.c	2010-07-26 10:54:31.809328601 -0400
+@@ -69,6 +69,8 @@ static ValidProperty valid_properties[] 
+ 	{ NM_OPENSWAN_DHGROUP,               G_TYPE_STRING, 0, 0 },
+ 	{ NM_OPENSWAN_PFSGROUP,       G_TYPE_STRING, 0, 0 },
+ 	{ NM_OPENSWAN_DPDTIMEOUT,      G_TYPE_INT, 0, 86400 },
++	{ NM_OPENSWAN_IKE,            G_TYPE_STRING, 0, 0 },
++	{ NM_OPENSWAN_ESP,            G_TYPE_STRING, 0, 0 },
+ 	/* Ignored option for internal use */
+ 	{ NM_OPENSWAN_PSK_INPUT_MODES,            G_TYPE_NONE, 0, 0 },
+ 	{ NM_OPENSWAN_XAUTH_PASSWORD_INPUT_MODES,   G_TYPE_NONE, 0, 0 },
+@@ -505,6 +507,8 @@ nm_openswan_config_write (gint openswan_
+ 	const char *props_username;
+ 	//const char *props_natt_mode;
+ 	const char *default_username;
++	const char *phase1_alg_str;
++	const char *phase2_alg_str;
+ 	//const char *pw_type;
+ 	gint fdtmp1=-1;
+ 	//gint conf_fd=-1;
+@@ -535,8 +539,23 @@ nm_openswan_config_write (gint openswan_
+         write_config_option (fdtmp1, " remote_peer_type=cisco\n");
+         write_config_option (fdtmp1, " rightxauthserver=yes\n");
+         write_config_option (fdtmp1, " rightmodecfgserver=yes\n");
++      
++        phase1_alg_str = nm_setting_vpn_get_data_item (s_vpn, NM_OPENSWAN_IKE);
++        if(!phase1_alg_str || !strlen (phase1_alg_str)) {       
+         write_config_option (fdtmp1, " ike=aes-sha1\n");
++        }
++        else {
++        write_config_option (fdtmp1, " ike=%s\n", phase1_alg_str);
++        }
++
++        phase2_alg_str = nm_setting_vpn_get_data_item (s_vpn, NM_OPENSWAN_ESP);
++        if(!phase2_alg_str || !strlen (phase2_alg_str)) {       
+         write_config_option (fdtmp1, " esp=aes-sha1;modp1024\n");
++        }
++        else {
++        write_config_option (fdtmp1, " esp=%s\n", phase2_alg_str);
++        }
++
+         write_config_option (fdtmp1, " nm_configured=yes\n");
+         //write_config_option (fdtmp1, " leftupdown=%s\n", NM_OSW_UPDOWN_PATH);
+         write_config_option (fdtmp1, " auto=add\n");
+diff -urNp NetworkManager-openswan-0.8-cvs-patched/src/nm-openswan-service.h NetworkManager-openswan-0.8/src/nm-openswan-service.h
+--- NetworkManager-openswan-0.8-cvs-patched/src/nm-openswan-service.h	2010-07-14 10:19:50.543516516 -0400
++++ NetworkManager-openswan-0.8/src/nm-openswan-service.h	2010-07-26 10:54:40.869329058 -0400
+@@ -47,6 +47,8 @@
+ #define NM_OPENSWAN_DHGROUP "dhgroup"
+ #define NM_OPENSWAN_PFSGROUP "pfsgroup"
+ #define NM_OPENSWAN_DPDTIMEOUT "dpdtimeout"
++#define NM_OPENSWAN_IKE  "ike"
++#define NM_OPENSWAN_ESP  "esp"
+ 
+ #define NM_OPENSWAN_PW_TYPE_SAVE   "save"
+ #define NM_OPENSWAN_PW_TYPE_ASK    "ask"
